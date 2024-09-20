@@ -156,7 +156,7 @@ const CourseInfo = {
     }
 }
   
-  let result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
+  const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
   
   console.log(result);
  
