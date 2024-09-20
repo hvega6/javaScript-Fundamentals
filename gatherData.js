@@ -82,25 +82,28 @@ const CourseInfo = {
         if (!courseInfo || !assignmentGroup || !learnerSubmissions) {
             throw new Error("Missing required input: courseInfo, assignmentGroup, or learnerSubmissions");
         }
-
         if (assignmentGroup.course_id !== courseInfo.id) {
             throw new Error("Invalid input: AssignmentGroup does not belong to the specified CourseInfo.");
         }
 
         const results = {};
+        const now = new Date();
 
-        assignmentGroup.assignments.forEach(assignment => {
+        // Using a for...of loop
+        for (const assignment of assignmentGroup.assignments) {
             const { id, points_possible, due_at } = assignment;
 
             // Skip assignments with points_possible of 0 or less
-            if (points_possible <= 0) return;
+            if (points_possible <= 0) continue;
 
             // Skip assignments due in the future
             const dueDate = new Date(due_at);
-            const now = new Date();
-            if (dueDate > now) return;
+            if (dueDate > now) continue;
 
-            learnerSubmissions.forEach(submission => {
+            // Using a while loop
+            let i = 0;
+            while (i < learnerSubmissions.length) {
+                const submission = learnerSubmissions[i];
                 if (submission.assignment_id === id) {
                     const { learner_id, submission: { submitted_at, score: originalScore } } = submission;
 
@@ -124,8 +127,9 @@ const CourseInfo = {
                     results[learner_id].totalScore += score;
                     results[learner_id].totalPoints += points_possible;
                 }
-            });
-        });
+                i++;
+            }
+        }
 
         // Calculate average scores and format results
         return Object.values(results).map(learner => {
@@ -138,11 +142,11 @@ const CourseInfo = {
             }
 
             // Add individual assignment scores
-            assignmentGroup.assignments.forEach(assignment => {
+            for (const assignment of assignmentGroup.assignments) {
                 if (learner[assignment.id] !== undefined) {
                     formattedLearner[assignment.id] = learner[assignment.id];
                 }
-            });
+            }
 
             return formattedLearner;
         });
