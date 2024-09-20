@@ -76,27 +76,59 @@ const CourseInfo = {
     }
   ];
   
-  function getLearnerData(course, ag, submissions) {
-    // here, we would process this data to achieve the desired result.
-    const result = [
-      {
-        id: 125,
-        avg: 0.985, // (47 + 150) / (50 + 150)
-        1: 0.94, // 47 / 50
-        2: 1.0 // 150 / 150
-      },
-      {
-        id: 132,
-        avg: 0.82, // (39 + 125) / (50 + 150)
-        1: 0.78, // 39 / 50
-        2: 0.833 // late: (140 - 15) / 150
+  function getLearnerData(courseInfo, assignmentGroup, LearnerSubmissions) {
+    if (assignmentGroup.course_id !== courseInfo.id) {
+      throw new Error("Invalid input: AssignmentGroup does not belong to the specified CourseInfo.");
+  }
+
+  const results = {};
+
+  assignmentGroup.assignments.forEach(assignment => {
+      const { id, points_possible, due_at } = assignment;
+
+      // Skip assignments with points_possible of 0
+      if (points_possible <= 0) return;
+
+      LearnerSubmissions.forEach(submission => {
+          const { learner_id, assignment_id, submission: { submitted_at, score } } = submission;
+
+          // Only process submissions for the current assignment
+          if (assignment_id === id) {
+              // Check if the assignment is due
+              if (new Date(submitted_at) > new Date(due_at)) {
+                  score *= 0.9; // Deduct 10% for late submission
+              }
+
+              // Initialize learner data if not present
+              if (!results[learner_id]) {
+                  results[learner_id] = { id: learner_id, avg: 0, totalScore: 0, totalPoints: 0 };
+              }
+
+              // Calculate percentage score
+              const percentageScore = (score / points_possible) * 100;
+
+              // Update learner data
+              results[learner_id][id] = percentageScore;
+              results[learner_id].totalScore += score;
+              results[learner_id].totalPoints += points_possible;
+          }
+      });
+  });
+
+  // Calculate average scores
+  return Object.values(results).map(learner => {
+      if (learner.totalPoints > 0) {
+          learner.avg = (learner.totalScore / learner.totalPoints) * 100;
+      } else {
+          learner.avg = 0; // No valid submissions
       }
-    ];
-  
-    return result;
+      delete learner.totalScore; // Clean up
+      delete learner.totalPoints; // Clean up
+      return learner;
+  });
   }
   
-  const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
+  let result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
   
   console.log(result);
-  
+ 
